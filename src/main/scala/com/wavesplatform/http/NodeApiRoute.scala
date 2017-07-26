@@ -25,7 +25,7 @@ case class NodeApiRoute(settings: RestAPISettings, application: Shutdownable)
     new ApiResponse(code = 200, message = "Json Waves node version")
   ))
   def version: Route = (get & path("version")) {
-    complete(Json.obj("version" -> Constants.AgentName))
+    complete(Json.obj("version!" -> Constants.AgentName))
   }
 
   @Path("/stop")
