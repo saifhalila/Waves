@@ -5,6 +5,7 @@ import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 
 import scala.concurrent.Await.result
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 import scala.concurrent.Future.traverse
 import scala.concurrent.duration._
 import scala.util.Random
@@ -16,23 +17,25 @@ class ValidChainGenerationSpec(override val nodes: Seq[Node]) extends FreeSpec w
     "1 of N" in test(1)
     "N-1 of N" in test(nodes.size - 1)
 
-    def test(n: Int): Unit = {
-      val initialHeight = result(for {
-        height <- traverse(nodes)(_.height).map(_.max)
-        newHeight = height + 5
-        _ <- traverse(nodes)(_.waitForHeight(newHeight))
-      } yield newHeight, 5.minutes)
+    def test(n: Int): Unit = result(for {
+      height <- traverse(nodes)(_.height).map(_.max)
+      initialHeight = height + 5
+      _ <- traverse(nodes)(_.waitForHeight(initialHeight))
 
-      val targetHeight = initialHeight + 2
-      val rollbackNodes = Random.shuffle(nodes).take(n)
+      rollbackNodes = Random.shuffle(nodes).take(n)
+      _ <- traverse(rollbackNodes)(_.rollback(1))
+      _ <- waitForSameBlocksAt(initialHeight, 3.seconds)
+    } yield (), 7.minutes)
 
-      rollbackNodes.foreach(_.rollback(1))
-      val synchronizedBlocks = result(for {
-        _ <- traverse(nodes)(_.waitForHeight(targetHeight))
-        blocks <- traverse(nodes)(_.blockAt(initialHeight))
-      } yield blocks, 5.minutes)
-
-      all(synchronizedBlocks) shouldEqual synchronizedBlocks.head
+    def waitForSameBlocksAt(height: Int, delay: FiniteDuration): Future[Boolean] = {
+      traverse(nodes)(_.blockAt(height)).flatMap { blocks =>
+        if (blocks.forall(_ == blocks.head)) Future.successful(true)
+        else {
+          Future {
+            Thread.sleep(delay.toMillis)
+          }.flatMap(_ => waitForSameBlocksAt(height, delay))
+        }
+      }
     }
   }
 }
