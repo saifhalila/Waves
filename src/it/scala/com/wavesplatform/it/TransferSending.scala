@@ -32,7 +32,7 @@ trait TransferSending {
     val requests = sourceAndDest.foldLeft(List.empty[Req]) {
       case (rs, (src, dest)) =>
         val transferAmount = (1e-8 + Random.nextDouble() * 1e-8 * balances(src)).toLong
-        rs :+ Req(src, dest, transferAmount, fee)
+        rs :+ Req(src, dest, Math.max(transferAmount, fee), fee)
     }
 
     requests
