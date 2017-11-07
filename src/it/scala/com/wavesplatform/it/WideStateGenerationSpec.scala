@@ -10,7 +10,7 @@ import scala.concurrent.Future.traverse
 import scala.concurrent.duration._
 
 class WideStateGenerationSpec(override val nodes: Seq[Node]) extends FreeSpec with ScalaFutures with IntegrationPatience
-  with Matchers with TransferSending {
+  with Matchers with TransferSending with MultipleNodesApi {
 
   private val requestsCount = 10000
 

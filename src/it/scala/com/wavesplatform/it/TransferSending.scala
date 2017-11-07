@@ -3,6 +3,7 @@ package com.wavesplatform.it
 import com.wavesplatform.it.TransferSending.Req
 import com.wavesplatform.it.api.NodeApi.Transaction
 import scorex.account.{Address, AddressScheme}
+import scorex.utils.ScorexLogging
 
 import scala.concurrent.Future
 import scala.util.Random
@@ -11,7 +12,7 @@ object TransferSending {
   case class Req(source: String, targetAddress: String, amount: Long, fee: Long)
 }
 
-trait TransferSending {
+trait TransferSending extends ScorexLogging {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -31,8 +32,11 @@ trait TransferSending {
     }
     val requests = sourceAndDest.foldLeft(List.empty[Req]) {
       case (rs, (src, dest)) =>
-        val transferAmount = (1e-8 + Random.nextDouble() * 1e-8 * balances(src)).toLong
-        rs :+ Req(src, dest, Math.max(transferAmount, fee), fee)
+        val a = Random.nextDouble()
+        val b = balances(src)
+        val transferAmount = (1e-8 + a * 1e-9 * b).toLong
+        if (transferAmount < 0) log.warn(s"Negative amount: (1e-8 + $a * 1e-8 * $b) = $transferAmount")
+        rs :+ Req(src, dest, transferAmount, fee)
     }
 
     requests

@@ -11,7 +11,7 @@ import scala.concurrent.duration._
 import scala.util.Random
 
 class ValidChainGenerationSpec(override val nodes: Seq[Node]) extends FreeSpec with ScalaFutures with IntegrationPatience
-  with Matchers with TransferSending {
+  with Matchers with TransferSending with MultipleNodesApi {
 
   "Generate more blocks and resynchronise after rollback" - {
     "1 of N" in test(1)
@@ -19,12 +19,12 @@ class ValidChainGenerationSpec(override val nodes: Seq[Node]) extends FreeSpec w
 
     def test(n: Int): Unit = result(for {
       height <- traverse(nodes)(_.height).map(_.max)
-      initialHeight = height + 5
-      _ <- traverse(nodes)(_.waitForHeight(initialHeight))
+      baseHeight = height + 5
+      _ <- traverse(nodes)(_.waitForHeight(baseHeight))
 
       rollbackNodes = Random.shuffle(nodes).take(n)
       _ <- traverse(rollbackNodes)(_.rollback(1))
-      _ <- waitForSameBlocksAt(nodes)(initialHeight, 5.seconds)
+      _ <- waitForSameBlocksAt(nodes)(baseHeight, 5.seconds)
     } yield (), 7.minutes)
   }
 }
