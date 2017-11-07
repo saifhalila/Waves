@@ -67,7 +67,7 @@ class RemoteScoreObserver(scoreTtl: FiniteDuration, lastSignatures: => Seq[ByteS
         channelWithHighestScore match {
           case Some((bestChannel, bestScore))
             if bestScore > localScore && pinnedChannel.compareAndSet(null, bestChannel) =>
-            log.debug(s"${id(ctx)} Switching to second best channel $pinnedChannelId")
+            log.debug(s"${id(ctx)} Switching to next best channel $bestChannel with score $bestScore")
             requestExtension(bestChannel)
           case _ =>
         }
